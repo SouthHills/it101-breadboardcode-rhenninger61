@@ -10,7 +10,6 @@ def loop():
     global LED
     
     while True:
-        
         if strobing == True:
             LED.on()
             time.sleep(0.5)
