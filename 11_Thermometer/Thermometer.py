@@ -1,7 +1,6 @@
 # Description : DIY Thermometer
 from pathlib import Path
 import sys
-import RPi.GPIO as GPIO
 import time
 import math
 
@@ -11,35 +10,35 @@ from ADCDevice import *
 
 USING_GRAVITECH_ADC = False # Only modify this if you are using a Gravitech ADC
 
-adc = ADCDevice() # Define an ADCDevice class object
+ADC = ADCDevice() # Define an ADCDevice class object
 
 def setup():
-    global adc
-    if(adc.detectI2C(0x48) and USING_GRAVITECH_ADC): 
-        adc = GravitechADC()
-    elif(adc.detectI2C(0x48)): # Detect the pcf8591.
-        adc = PCF8591()
-    elif(adc.detectI2C(0x4b)): # Detect the ads7830
-        adc = ADS7830()
+    global ADC
+    if(ADC.detectI2C(0x48) and USING_GRAVITECH_ADC): 
+        ADC = GravitechADC()
+    elif(ADC.detectI2C(0x48)): # Detect the pcf8591.
+        ADC = PCF8591()
+    elif(ADC.detectI2C(0x4b)): # Detect the ads7830
+        ADC = ADS7830()
     else:
         print("No correct I2C address found, \n"
-        "Please use command 'i2cdetect -y 1' to check the I2C address! \n"
-        "Program Exit. \n")
+            "Please use command 'i2cdetect -y 1' to check the I2C address! \n"
+            "Program Exit. \n")
         exit(-1)
         
 def loop():
     while True:
-        value = adc.analogRead(0)        # read ADC value A0 pin
+        value = ADC.analogRead(0)        # read ADC value A0 pin
         voltage = value / 255.0 * 3.3        # calculate voltage
         Rt = 10 * voltage / (3.3 - voltage)    # calculate resistance value of thermistor
         tempK = 1/(1/(273.15 + 25) + math.log(Rt/10)/3950.0) # calculate temperature (Kelvin)
-        tempC = tempK -273.15        # calculate temperature (Celsius)
-        print ('ADC Value : %d, Voltage : %.2f, Temperature : %.2f'%(value,voltage,tempC))
+        tempC = tempK - 273.15        # calculate temperature (Celsius)
+        tempF = tempC * 1.8 + 32
+        print (f'ADC Value: {value}\t Voltage: {voltage:.2f}\t Temperature(C): {tempC:.2f}\t Temperature(F): {tempF:.2f}')
         time.sleep(0.01)
 
 def destroy():
-    adc.close()
-    GPIO.cleanup()
+    ADC.close()
     
 if __name__ == '__main__':  # Program entrance
     print ('Program is starting ... ')
