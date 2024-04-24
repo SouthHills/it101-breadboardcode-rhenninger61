@@ -1,5 +1,6 @@
 from gpiozero import Buzzer, Button
 
+# (X-low)/(high-low)
 BUZZER = Buzzer(17)
 BUTTON = Button(18)
 

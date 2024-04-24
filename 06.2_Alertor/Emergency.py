@@ -1,10 +1,12 @@
-from gpiozero import TonalBuzzer, Button
+from gpiozero import TonalBuzzer, Button, PWMLED
 import time
 from signal import pause
 
 
 BUZZER = TonalBuzzer(17)
 BUTTON = Button(18)
+LED = PWMLED(23)
+
 HIGH_TONE = 600 # The max is 880 but that hurts my ears
 LOW_TONE = 220
     
@@ -19,6 +21,8 @@ def alertor():
     while True:  
         # Linear
         for x in range(LOW_TONE, HIGH_TONE):
+            # (X-low)/(high-low)
+            LED.value = (x-LOW_TONE)/(HIGH_TONE - LOW_TONE)
             BUZZER.play(x)
             time.sleep(0.002)
             
@@ -26,6 +30,7 @@ def alertor():
                 return  
             
         for x in range(HIGH_TONE, LOW_TONE, -1):
+            LED.value = (x-LOW_TONE)/(HIGH_TONE - LOW_TONE)
             BUZZER.play(x)
             time.sleep(0.002)
             
@@ -34,11 +39,13 @@ def alertor():
         
 def stop_alertor():
     BUZZER.stop()
+    LED.off()
     print ('alertor turned off <<<')
 
 def destroy():
     BUZZER.close()
     BUTTON.close()
+    LED.close()
 
 if __name__ == '__main__':     # Program entrance
     print ('Program is starting...')
