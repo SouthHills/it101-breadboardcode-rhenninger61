@@ -1,0 +1,51 @@
+from gpiozero import Button
+import subprocess
+
+BUTTON_1 = Button(18)
+BUTTON_2 = Button(23)
+toggle_firefox = False
+toggle_chrome = False
+firefox_pid = 0
+chrome_pid = 0
+
+def firefox():
+    global firefox_pid, toggle_firefox
+    print('opening firefox')
+    #Switches bool, default is false, if button pressed, changed to true
+    toggle_firefox = not toggle_firefox
+    
+    if toggle_firefox == True:
+        # Start the process
+        firefox_pid = subprocess.Popen(["firefox"])
+        
+    else:
+        # Terminate the process
+        firefox_pid.terminate()
+
+def chrome():
+    global chrome_pid, toggle_chrome
+    print('opening chrome')
+    #Switches bool, default is false, if button pressed, changed to true
+    toggle_chrome = not toggle_chrome
+    
+    if toggle_chrome == True:
+        # Start the process
+        chrome_pid = subprocess.Popen(["chromium"])
+    else:
+        # Terminate the process
+        chrome_pid.terminate()
+
+def destroy():
+    global BUTTON_1, BUTTON_2
+    # Release resources
+    BUTTON_1.close()
+    BUTTON_2.close()
+
+if __name__ == "__main__":     # Program entrance
+    print ("Program is starting...")
+    try:
+        while True:
+            BUTTON_1.when_pressed = firefox
+            BUTTON_2.when_pressed = chrome
+    except KeyboardInterrupt:  # Press ctrl-c to end the program.
+        destroy()
