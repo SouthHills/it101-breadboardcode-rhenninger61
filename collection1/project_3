@@ -1,0 +1,63 @@
+from gpiozero import RGBLED, Button
+import time
+import random
+from signal import pause
+
+# active_high must be true because it is a common anode RGBLed
+LED = RGBLED(red=17, green=27, blue=22, active_high=True)
+BUTTON = Button(18)  # define buttonPin
+purple = (1,0,1)
+green = (0,1,0)
+blue = (0,0,1)
+color_not_green = True
+
+def set_color(r, g, b):
+    """ Invert the colors due to using a common anode """
+    LED.color = (1 - r, 1 - g, 1 - b)
+
+def reaction():
+    global LED, color_not_green
+    print("button pressed")
+    if color_not_green == False:
+        for _ in range(0,5):
+            set_color(0,1,0)
+            time.sleep(.5)
+            set_color(0,0,0)
+            time.sleep(.5)
+    else:
+        color_not_green = False
+        for _ in range(0,5):
+            set_color(1,0,0)
+            time.sleep(.5)
+            set_color(0,0,0)
+            time.sleep(.5)
+    exit()
+
+def loop():
+    global purple, green, blue, color_not_green
+    colors = [purple, green, blue]
+    
+    while color_not_green == True :
+        
+        selected_color = random.choice((colors))
+        print(f"{str(selected_color)}")
+        if selected_color == green:
+            set_color(selected_color[0],selected_color[1],selected_color[2])
+            color_not_green = False
+            
+        else:
+            set_color(selected_color[0],selected_color[1],selected_color[2])
+            time.sleep(1)
+
+def destroy():
+    LED.close()
+    BUTTON.close()
+
+if __name__ == '__main__':     # Program entrance
+    print ('Program is starting ... ')
+    try:
+        BUTTON.when_pressed = reaction
+        loop()
+        pause()
+    except KeyboardInterrupt:  # Press ctrl-c to end the program.
+        destroy()
