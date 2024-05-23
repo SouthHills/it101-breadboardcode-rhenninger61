@@ -1,7 +1,60 @@
+import smbus
+
 from time import sleep
+from datetime import datetime
 
+PCF8574_address = 0x27  # I2C address of the PCF8574 chip.
+PCF8574A_address = 0x3F  # I2C address of the PCF8574A chip.
 
-class Adafruit_CharLCD(object):
+class _PCF8574_I2C():
+    OUPUT = 0
+    INPUT = 1
+    
+    def __init__(self,address):
+        # Note you need to change the bus number to 0 if running on a revision 1 Raspberry Pi.
+        self.bus = smbus.SMBus(1)
+        self.address = address
+        self.currentValue = 0
+        self.writeByte(0)   #I2C test.
+        
+    def readByte(self):#Read PCF8574 all port of the data
+        #value = self.bus.read_byte(self.address)
+        return self.currentValue#value
+        
+    def writeByte(self,value):#Write data to PCF8574 port
+        self.currentValue = value
+        self.bus.write_byte(self.address,value)
+
+    def digitalRead(self,pin):#Read PCF8574 one port of the data
+        value = self.readByte()  
+        return (value&(1<<pin)==(1<<pin)) and 1 or 0
+        
+    def digitalWrite(self,pin,newvalue):#Write data to PCF8574 one port
+        value = self.currentValue #bus.read_byte(address)
+        if(newvalue == 1):
+            value |= (1<<pin)
+        elif (newvalue == 0):
+            value &= ~(1<<pin)
+        self.writeByte(value)   
+
+class _PCF8574_GPIO():#Standardization function interface
+    OUT = 0
+    IN = 1
+    BCM = 0
+    BOARD = 0
+    def __init__(self,address):
+        self.chip = _PCF8574_I2C(address)
+        self.address = address
+    def setmode(self,mode):#PCF8574 port belongs to two-way IO, do not need to set the input and output model
+        pass
+    def setup(self,pin,mode):
+        pass
+    def input(self,pin):#Read PCF8574 one port of the data
+        return self.chip.digitalRead(pin)
+    def output(self,pin,value):#Write data to PCF8574 one port
+        self.chip.digitalWrite(pin,value)
+        
+class _Adafruit_CharLCD():
 
     # commands
     LCD_CLEARDISPLAY        = 0x01
@@ -194,9 +247,36 @@ class Adafruit_CharLCD(object):
                 self.write4bits(0xC0)  # next line
             else:
                 self.write4bits(ord(char), True)
-
-
-if __name__ == '__main__':
-    lcd = Adafruit_CharLCD()
-    lcd.clear()
-    lcd.message("  Adafruit 16x2\n  Standard LCD")
+                
+# Wrapper for ADAFruitLCD display
+class LCDDisplayWrapper():
+    mcp: _PCF8574_GPIO
+    lcd: _Adafruit_CharLCD
+    
+    def __init__(self):
+        # Create PCF8574 GPIO adapter.
+        try:
+            self.mcp = _PCF8574_GPIO(PCF8574_address)
+        except:
+            try:
+                self.mcp = _PCF8574_GPIO(PCF8574A_address)
+            except:
+                print ('I2C Address Error !')
+                exit(1)
+            
+        # Create LCD, passing in MCP GPIO adapter.
+        self.lcd = _Adafruit_CharLCD(pin_rs=0, pin_e=2, pins_db=[4,5,6,7], GPIO=self.mcp)
+        self.mcp.output(3,1)     # turn on LCD backlight
+        self.lcd.begin(16,2)     # set number of LCD lines and columns
+        
+    def display_message(self, message: str, row: int = 1, scroll = False) -> None:
+        if row != 1 and row != 2:
+            raise ValueError("The row must be either 1 or 2.")
+        if scroll == False and len(message) > 16:
+            print(f"You're attempting to display a string larger than can fit on the screen ({len(message)}/16). It will be truncated to 16 characters.")
+        
+        self.lcd.setCursor(0,row - 1)  # set cursor position
+        self.lcd.message(message)
+        
+    def clear(self):
+        self.lcd.clear()
